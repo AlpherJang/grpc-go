@@ -21,6 +21,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"github.com/golang/glog"
 	"io"
 	"math"
 	"strconv"
@@ -848,6 +849,7 @@ func (a *csAttempt) sendMsg(m interface{}, hdr, payld, data []byte) error {
 			// will call it with the stream's status independently.
 			return nil
 		}
+		glog.Errorf("client stream call Write func write hdr to ClientTransport failed: %v , and finally return io.EOF", err)
 		return io.EOF
 	}
 	if a.statsHandler != nil {
