@@ -607,6 +607,7 @@ func (cs *clientStream) withRetry(op func(a *csAttempt) error, onSuccess func())
 		}
 		if err := cs.retryLocked(err); err != nil {
 			cs.mu.Unlock()
+			glog.Errorf("grpc client stream retryLocked failed: %s", err.Error())
 			return err
 		}
 	}
@@ -698,6 +699,7 @@ func (cs *clientStream) SendMsg(m interface{}) (err error) {
 	// load hdr, payload, data
 	hdr, payload, data, err := prepareMsg(m, cs.codec, cs.cp, cs.comp)
 	if err != nil {
+		glog.Errorf("grpc client stream prepareMsg failed:  %s", err.Error())
 		return err
 	}
 
@@ -711,9 +713,13 @@ func (cs *clientStream) SendMsg(m interface{}) (err error) {
 		// nil out the message and uncomp when replaying; they are only needed for
 		// stats which is disabled for subsequent attempts.
 		m, data = nil, nil
+		glog.Errorf("grpc client stream sendMsg failed: %s", err.Error())
 		return err
 	}
 	err = cs.withRetry(op, func() { cs.bufferForRetryLocked(len(hdr)+len(payload), op) })
+	if err != nil {
+		glog.Errorf("grpc client stream retry failed : %s", err.Error())
+	}
 	if cs.binlog != nil && err == nil {
 		cs.binlog.Log(&binarylog.ClientMessage{
 			OnClientSide: true,
@@ -849,7 +855,7 @@ func (a *csAttempt) sendMsg(m interface{}, hdr, payld, data []byte) error {
 			// will call it with the stream's status independently.
 			return nil
 		}
-		glog.Errorf("client stream call Write func write hdr to ClientTransport failed: %v , and finally return io.EOF", err)
+		glog.Errorf("client stream call Write func write hdr to ClientTransport failed: %s , and finally return io.EOF", err.Error())
 		return io.EOF
 	}
 	if a.statsHandler != nil {
