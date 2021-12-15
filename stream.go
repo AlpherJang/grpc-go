@@ -867,8 +867,8 @@ func (a *csAttempt) sendMsg(m interface{}, hdr, payld, data []byte) error {
 			return nil
 		}
 		glog.Errorf("client stream call Write func write hdr to ClientTransport failed: %s , and finally return io.EOF", err.Error())
-		return err
-		//return io.EOF
+		//return err
+		return io.EOF
 	}
 	if a.statsHandler != nil {
 		a.statsHandler.HandleRPC(cs.ctx, outPayload(true, m, data, payld, time.Now()))
