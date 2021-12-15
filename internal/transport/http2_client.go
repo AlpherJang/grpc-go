@@ -21,6 +21,7 @@ package transport
 import (
 	"context"
 	"fmt"
+	"github.com/golang/glog"
 	"io"
 	"math"
 	"net"
@@ -712,11 +713,15 @@ func (t *http2Client) CloseStream(s *Stream, err error) {
 		rst = true
 		rstCode = http2.ErrCodeCancel
 	}
+	glog.Infof("http2Client关闭Stream")
 	t.closeStream(s, err, rst, rstCode, status.Convert(err), nil, false)
 }
 
 func (t *http2Client) closeStream(s *Stream, err error, rst bool, rstCode http2.ErrCode, st *status.Status, mdata map[string][]string, eosReceived bool) {
 	// Set stream status to done.
+	if err != nil {
+		glog.Errorf("关闭stream由于: %s", err.Error())
+	}
 	if s.swapState(streamDone) == streamDone {
 		// If it was already done, return.  If multiple closeStream calls
 		// happen simultaneously, wait for the first to finish.
@@ -807,6 +812,7 @@ func (t *http2Client) Close() error {
 	}
 	// Notify all active streams.
 	for _, s := range streams {
+		glog.Error("因为transport关闭,所以关闭stream")
 		t.closeStream(s, ErrConnClosing, false, http2.ErrCodeNo, status.New(codes.Unavailable, ErrConnClosing.Desc), nil, false)
 	}
 	if t.statsHandler != nil {
